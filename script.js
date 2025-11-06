@@ -44,12 +44,37 @@ function validate() {
   return valid;
 }
 
-form.addEventListener('submit', (e) => {
+form.addEventListener('submit', async (e) => {
   e.preventDefault();
   successBox.hidden = true;
-  if (validate()) {
-    // Simula envio e mostra sucesso
-    form.reset();
-    successBox.hidden = false;
+  if (!validate()) return;
+
+  const payload = {
+    name: form.name.value.trim(),
+    email: form.email.value.trim(),
+    password: form.password.value,
+  };
+
+  try {
+    const res = await fetch('/api/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (res.ok) {
+      form.reset();
+      successBox.hidden = false;
+    } else {
+      const data = await res.json();
+      // tenta mostrar o erro no campo apropriado
+      if (data && data.error) {
+        if (/email/i.test(data.error)) showError(form.email, data.error);
+        else if (/nome/i.test(data.error)) showError(form.name, data.error);
+        else showError(form.password, data.error);
+      }
+    }
+  } catch (err) {
+    showError(form.password, 'Erro de conexão. Tente novamente.');
   }
 });
